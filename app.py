@@ -10,7 +10,7 @@ try:
 except:
     df = pd.DataFrame(columns=["Date","Category","Amount","Type","Description"])
 
-# ---------- FIX DATE ERROR ----------
+# ---------- FIX DATE ----------
 if not df.empty:
     df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
     df = df.dropna(subset=["Date"])
@@ -22,13 +22,18 @@ menu = st.sidebar.radio("Navigation", ["Dashboard", "Add Transaction"])
 
 st.sidebar.markdown("## 🔎 Filter")
 
+# ✅ FIXED FILTER LOGIC
 if not df.empty:
     selected_cat = st.sidebar.multiselect(
         "Category Filter",
-        options=df["Category"].unique(),
-        default=df["Category"].unique()
+        options=df["Category"].unique()
     )
-    filtered_df = df[df["Category"].isin(selected_cat)]
+
+    # If nothing selected → show ALL data
+    if selected_cat:
+        filtered_df = df[df["Category"].isin(selected_cat)]
+    else:
+        filtered_df = df
 else:
     filtered_df = df
 
@@ -62,12 +67,12 @@ if menu == "Dashboard":
 
     st.title("💰 Expense Tracker Dashboard")
 
-    # ---------- KPIs ----------
     total = len(filtered_df)
     income = filtered_df[filtered_df["Type"]=="Income"]["Amount"].sum()
     expense = filtered_df[filtered_df["Type"]=="Expense"]["Amount"].sum()
     savings = income - expense
 
+    # ---------- KPIs ----------
     col1, col2, col3, col4 = st.columns(4)
 
     col1.metric("Transactions", total)
@@ -106,13 +111,12 @@ if menu == "Dashboard":
             x="Month",
             y="Amount",
             color="Type",
-            barmode="group",
-            title="Monthly Income vs Expense"
+            barmode="group"
         )
 
         st.plotly_chart(fig_month, use_container_width=True)
     else:
-        st.info("No data for monthly analysis")
+        st.info("No data")
 
     # ---------- EXPENSE TREND ----------
     colA, colB = st.columns(2)
@@ -178,12 +182,12 @@ if menu == "Dashboard":
     st.subheader("📋 Recent Transactions")
 
     if not filtered_df.empty:
-        filtered_df = filtered_df.sort_values(by="Date", ascending=False)
-        st.dataframe(filtered_df)
+        show_df = filtered_df.sort_values(by="Date", ascending=False)
+        st.dataframe(show_df)
     else:
         st.info("No data yet")
 
-    # ---------- CLEAR DATA ----------
+    # ---------- CLEAR ----------
     if st.button("⚠️ Clear All Data"):
         df = pd.DataFrame(columns=df.columns)
         df.to_csv("expenses.csv", index=False)
