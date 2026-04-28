@@ -10,8 +10,10 @@ try:
 except:
     df = pd.DataFrame(columns=["Date","Category","Amount","Type","Description"])
 
+# ---------- FIX DATE ERROR ----------
 if not df.empty:
-    df["Date"] = pd.to_datetime(df["Date"])
+    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    df = df.dropna(subset=["Date"])
 
 # ---------- SIDEBAR ----------
 st.sidebar.title("📊 Expense Tracker")
@@ -35,11 +37,14 @@ if menu == "Add Transaction":
     st.title("➕ Add Transaction")
 
     amount = st.number_input("Amount", min_value=0.0)
+
     category = st.selectbox(
         "Category",
         ["Salary","Food","Shopping","Travel","Bills","Entertainment"]
     )
+
     t_type = st.selectbox("Type", ["Income","Expense"])
+
     desc = st.text_input("Description")
     date = st.date_input("Date")
 
@@ -91,9 +96,10 @@ if menu == "Dashboard":
     st.subheader("📅 Monthly Insight")
 
     if not filtered_df.empty:
-        filtered_df["Month"] = filtered_df["Date"].dt.to_period("M").astype(str)
+        temp_df = filtered_df.copy()
+        temp_df["Month"] = temp_df["Date"].dt.to_period("M").astype(str)
 
-        monthly = filtered_df.groupby(["Month","Type"])["Amount"].sum().reset_index()
+        monthly = temp_df.groupby(["Month","Type"])["Amount"].sum().reset_index()
 
         fig_month = px.bar(
             monthly,
